@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fruit Ninja Ultimate</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+            cursor: none;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        /* Main Menu Styles */
+        #main-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 300;
+        }
+        
+        #main-menu h1 {
+            font-size: 72px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff6600;
+            color: white;
+        }
+        
+        .menu-btn {
+            margin: 15px;
+            padding: 15px 40px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 250px;
+            text-align: center;
+        }
+        
+        .menu-btn:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        
+        #options-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 400;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin: 15px 0;
+            color: white;
+            font-size: 20px;
+        }
+        
+        .option-item label {
+            margin-right: 20px;
+        }
+        
+        .slider {
+            -webkit-appearance: none;
+            width: 200px;
+            height: 10px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+        
+        /* Game Elements */
+        .fruit {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+        
+        .fruit.cut {
+            transform: scale(0.1) rotate(180deg);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        
+        .cut-effect {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path fill="none" stroke="%23fff" stroke-width="3" d="M10,50 Q50,10 90,50 Q50,90 10,50 Z" opacity="0.7"/></svg>');
+            background-size: contain;
+            pointer-events: none;
+            animation: cutAnimation 0.4s forwards;
+            z-index: 10;
+        }
+        
+        @keyframes cutAnimation {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+        
+        #lives-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 36px;
+            z-index: 200;
+            display: none;
+        }
+        
+        #restart-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #restart-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .juice-particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle-fall 1s forwards;
+        }
+        
+        @keyframes particle-fall {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+        
+        .sword-pointer {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            pointer-events: none;
+            z-index: 1000;
+            background-image: url('https://i.ibb.co/N2MgjD3k/Lovepik-com-401107047-long-sword.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+            transition: transform 0.1s;
+        }
+        
+        .sword-pointer.active {
+            transform: translate(-50%, -50%) rotate(-45deg) scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
+        }
+        
+        .trail {
+            position: absolute;
+            width: 100px;
+            height: 20px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
+            border-radius: 50%;
+            pointer-events: none;
+            transform-origin: left center;
+            z-index: 999;
+            opacity: 0;
+        }
+        
+        #sound-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(0,0,0,0.5);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            z-index: 150;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Main Menu -->
+        <div id="main-menu">
+            <h1>FRUIT NINJA</h1>
+            <button class="menu-btn" id="start-btn">START GAME</button>
+            <button class="menu-btn" id="options-btn">OPTIONS</button>
+        </div>
+        
+        <!-- Options Menu -->
+        <div id="options-menu">
+            <h2>Options</h2>
+            <div class="option-item">
+                <label for="music-volume">Music Volume:</label>
+                <input type="range" id="music-volume" class="slider" min="0" max="1" step="0.1" value="0.5">
+            </div>
+            <div class="option-item">
+                <label for="sfx-volume">Sound Effects:</label>
+                <input type="range" id="sfx-volume" class="slider" min="0" max="1" step="0.1" value="0.7">
+            </div>
+            <button class="menu-btn" id="back-btn">BACK</button>
+        </div>
+        
+        <!-- Game Elements -->
+        <div id="score-display">Score: 0</div>
+        <div id="lives-display">Lives: ❤️❤️❤️</div>
+        <div id="game-over">
+            <h1>Game Over!</h1>
+            <p id="final-score">Your score: 0</p>
+            <button id="restart-btn">Play Again</button>
+        </div>
+        <div class="sword-pointer" id="sword-pointer"></div>
+        <button id="sound-btn">🔊</button>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="background-music" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="cut-sound">
+        <source src="https://www.soundjay.com/mechanics/sounds/sword-1.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Game elements
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score-display');
+        const livesDisplay = document.getElementById('lives-display');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartBtn = document.getElementById('restart-btn');
+        const swordPointer = document.getElementById('sword-pointer');
+        const soundBtn = document.getElementById('sound-btn');
+        
+        // Menu elements
+        const mainMenu = document.getElementById('main-menu');
+        const startBtn = document.getElementById('start-btn');
+        const optionsBtn = document.getElementById('options-btn');
+        const optionsMenu = document.getElementById('options-menu');
+        const backBtn = document.getElementById('back-btn');
+        const musicVolume = document.getElementById('music-volume');
+        const sfxVolume = document.getElementById('sfx-volume');
+        
+        // Audio elements
+        const bgMusic = document.getElementById('background-music');
+        const cutSound = document.getElementById('cut-sound');
+        
+        // Game variables
+        let score = 0;
+        let lives = 3;
+        let gameActive = false;
+        let fruits = [];
+        let spawnInterval;
+        let soundEnabled = true;
+        let musicEnabled = true;
+        
+        const fruitImages = [
+            '🍎', '🍊', '🍋', '🍉', '🍇', '🍓', '🍑', '🍍', '🥝', '🍒'
+        ];
+        const fruitColors = [
+            '#ff0000', '#ff9900', '#ffff00', '#00aa00', '#8800cc', 
+            '#ff0066', '#ffcc00', '#ccaa00', '#66cc00', '#ff0000'
+        ];
+        
+        // Game settings
+        const settings = {
+            spawnRate: 1000,
+            fallSpeed: 1,
+            rotationSpeed: 1,
+            fruitSize: 60
+        };
+        
+        // Track mouse position and movement
+        let mouseX = 0;
+        let mouseY = 0;
+        let prevMouseX = 0;
+        let prevMouseY = 0;
+        
+        // Initialize game
+        function initGame() {
+            score = 0;
+            lives = 3;
+            gameActive = true;
+            fruits = [];
+            scoreDisplay.textContent = `Score: ${score}`;
+            livesDisplay.textContent = `Lives: ${'❤️'.repeat(lives)}`;
+            gameOverScreen.style.display = 'none';
+            mainMenu.style.display = 'none';
+            
+            // Clear all existing fruits
+            document.querySelectorAll('.fruit').forEach(fruit => fruit.remove());
+            
+            // Start music
+            if (musicEnabled) {
+                bgMusic.currentTime = 0;
+                bgMusic.play().catch(e => console.log("Audio play failed:", e));
+            }
+            
+            // Start fruit spawning
+            spawnFruit();
+            spawnInterval = setInterval(spawnFruit, settings.spawnRate);
+            gameContainer.dataset.spawnInterval = spawnInterval;
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Update sword pointer position
+        function updatePointerPosition(x, y) {
+            swordPointer.style.left = `${x}px`;
+            swordPointer.style.top = `${y}px`;
+            
+            // Create motion trail effect when moving quickly
+            if (Math.abs(x - prevMouseX) > 5 || Math.abs(y - prevMouseY) > 5) {
+                createTrail(prevMouseX, prevMouseY, x, y);
+            }
+            
+            prevMouseX = x;
+            prevMouseY = y;
+        }
+        
+        // Create motion trail effect
+        function createTrail(fromX, fromY, toX, toY) {
+            const trail = document.createElement('div');
+            trail.className = 'trail';
+            
+            // Calculate angle and distance
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            
+            // Position and rotate trail
+            trail.style.left = `${fromX}px`;
+            trail.style.top = `${fromY}px`;
+            trail.style.width = `${distance}px`;
+            trail.style.transform = `rotate(${angle}deg)`;
+            trail.style.opacity = '0.7';
+            
+            gameContainer.appendChild(trail);
+            
+            // Fade out trail
+            const fadeOut = setInterval(() => {
+                const currentOpacity = parseFloat(trail.style.opacity);
+                if (currentOpacity <= 0) {
+                    clearInterval(fadeOut);
+                    trail.remove();
+                } else {
+                    trail.style.opacity = (currentOpacity - 0.1).toString();
+                }
+            }, 30);
+        }
+        
+        // Spawn a new fruit
+        function spawnFruit() {
+            if (!gameActive) return;
+            
+            const fruit = document.createElement('div');
+            fruit.className = 'fruit';
+            
+            // Random position at the top
+            const xPos = Math.random() * (window.innerWidth - settings.fruitSize);
+            fruit.style.left = `${xPos}px`;
+            fruit.style.top = `-${settings.fruitSize}px`;
+            
+            // Random fruit
+            const randomIndex = Math.floor(Math.random() * fruitImages.length);
+            const randomFruit = fruitImages[randomIndex];
+            fruit.textContent = randomFruit;
+            fruit.style.fontSize = `${settings.fruitSize}px`;
+            fruit.style.lineHeight = `${settings.fruitSize}px`;
+            fruit.dataset.color = fruitColors[randomIndex];
+            
+            // Random rotation
+            const rotation = (Math.random() * 60) - 30;
+            fruit.dataset.rotation = rotation;
+            
+            // Random size variation
+            const sizeVariation = 0.7 + Math.random() * 0.6;
+            fruit.dataset.size = sizeVariation;
+            fruit.style.transform = `scale(${sizeVariation}) rotate(${rotation}deg)`;
+            
+            // Add to DOM and fruits array
+            gameContainer.appendChild(fruit);
+            fruits.push({
+                element: fruit,
+                x: xPos,
+                y: -settings.fruitSize,
+                rotation: rotation,
+                size: sizeVariation,
+                color: fruitColors[randomIndex]
+            });
+            
+            // Add click event
+            fruit.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (!gameActive) return;
+                
+                // Find this fruit in the array
+                const fruitIndex = fruits.findIndex(f => f.element === this);
+                if (fruitIndex === -1) return;
+                
+                const fruit = fruits[fruitIndex];
+                
+                // Add cut animation
+                this.classList.add('cut');
+                
+                // Play cut sound
+                if (soundEnabled) {
+                    cutSound.currentTime = 0;
+                    cutSound.volume = sfxVolume.value;
+                    cutSound.play().catch(e => console.log("Sound play failed:", e));
+                }
+                
+                // Create effects
+                createCutEffect(e.clientX, e.clientY);
+                createJuiceParticles(e.clientX, e.clientY, fruit.color);
+                
+                // Update score
+                score += Math.floor(10 * fruit.size);
+                scoreDisplay.textContent = `Score: ${score}`;
+                
+                // Remove from array
+                fruits.splice(fruitIndex, 1);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    this.remove();
+                }, 300);
+                
+                // Add click animation to sword
+                swordPointer.classList.add('active');
+                setTimeout(() => {
+                    swordPointer.classList.remove('active');
+                }, 100);
+            });
+        }
+        
+        // Create juice particles
+        function createJuiceParticles(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'juice-particle';
+                particle.style.backgroundColor = color;
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                
+                // Random direction and distance
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 20 + Math.random() * 50;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                
+                gameContainer.appendChild(particle);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    particle.remove();
+                }, 1000);
+            }
+        }
+        
+        // Create cut effect
+        function createCutEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'cut-effect';
+            effect.style.left = `${x - 50}px`;
+            effect.style.top = `${y - 50}px`;
+            gameContainer.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 400);
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            // Update all fruits
+            for (let i = fruits.length - 1; i >= 0; i--) {
+                const fruit = fruits[i];
+                
+                // Move down
+                fruit.y += settings.fallSpeed * fruit.size;
+                fruit.element.style.top = `${fruit.y}px`;
+                
+                // Rotate
+                fruit.rotation += settings.rotationSpeed;
+                fruit.element.style.transform = `scale(${fruit.size}) rotate(${fruit.rotation}deg)`;
+                
+                // Check if out of bounds
+                if (fruit.y > window.innerHeight) {
+                    fruit.element.remove();
+                    fruits.splice(i, 1);
+                    lives--;
+                    livesDisplay.textContent = `Lives: ${'❤️'.repeat(Math.max(0, lives))}`;
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    }
+                }
+            }
+            
+            // Update pointer position
+            updatePointerPosition(mouseX, mouseY);
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Handle game over
+        function gameOver() {
+            gameActive = false;
+            finalScoreDisplay.textContent = `Your score: ${score}`;
+            gameOverScreen.style.display = 'flex';
+            clearInterval(spawnInterval);
+            bgMusic.pause();
+        }
+        
+        // Event Listeners
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        restartBtn.addEventListener('click', () => {
+            gameOverScreen.style.display = 'none';
+            initGame();
+        });
+        
+        startBtn.addEventListener('click', initGame);
+        
+        optionsBtn.addEventListener('click', () => {
+            mainMenu.style.display = 'none';
+            optionsMenu.style.display = 'flex';
+        });
+        
+        backBtn.addEventListener('click', () => {
+            optionsMenu.style.display = 'none';
+            mainMenu.style.display = 'flex';
+        });
+        
+        musicVolume.addEventListener('input', () => {
+            bgMusic.volume = musicVolume.value;
+            musicEnabled = musicVolume.value > 0;
+            if (musicEnabled && gameActive) {
+                bgMusic.play().catch(e => console.log("Audio play failed:", e));
+            }
+        });
+        
+        sfxVolume.addEventListener('input', () => {
+            cutSound.volume = sfxVolume.value;
+            soundEnabled = sfxVolume.value > 0;
+        });
+        
+        soundBtn.addEventListener('click', () => {
+            if (bgMusic.paused) {
+                bgMusic.play().catch(e => console.log("Audio play failed:", e));
+                soundBtn.textContent = "🔊";
+            } else {
+                bgMusic.pause();
+                soundBtn.textContent = "🔇";
+            }
+        });
+        
+        // Initialize volume settings
+        bgMusic.volume = musicVolume.value;
+        cutSound.volume = sfxVolume.value;
+    </script>
+</body>
+</html>
